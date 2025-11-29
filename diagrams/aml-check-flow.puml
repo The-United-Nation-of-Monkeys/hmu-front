@@ -1,0 +1,84 @@
+@startuml AML Check Flow
+!theme plain
+
+participant "Grantee" as User
+participant "Frontend" as FE
+participant "FastAPI" as API
+participant "AML Service" as AML
+participant "Smart Contract" as Contract
+participant "Blockchain" as Chain
+participant "PostgreSQL" as DB
+
+== Spending Request Creation ==
+
+User -> FE: Create spending request
+FE -> API: POST /grantee/spending_requests
+API -> DB: Create request (status: pending_university_approval)
+
+== AML Check Trigger ==
+
+API -> AML: check_request(request_id)
+activate AML
+
+AML -> DB: Get request details
+AML -> DB: Get grantee history
+AML -> DB: Get previous requests
+
+AML -> AML: Check patterns:
+note right of AML
+  - Unusual amounts
+  - Frequency of requests
+  - Geographic patterns
+  - Time patterns
+  - Related addresses
+end note
+
+alt AML flags found
+  AML -> DB: Create AML flags
+  AML -> DB: Update request status (if high severity)
+  AML --> API: Flags created
+  API -> DB: Update request status = "blocked" (if high)
+else No flags
+  AML --> API: No flags
+end
+
+deactivate AML
+
+API --> FE: Request with AML flags
+
+== University Review ==
+
+User -> FE: View request with AML flags
+FE -> API: GET /university/spending-requests/{id}
+API -> DB: Get request with flags
+DB --> API: Request + flags
+API --> FE: Request data
+
+alt Flags present
+  note right of User
+    University sees flags
+    Can still approve if acceptable
+  end note
+end
+
+== Approval with AML Check ==
+
+User -> FE: Approve request
+FE -> API: POST /university/approve-top3
+API -> AML: Final check before transfer
+AML -> DB: Re-check flags
+AML --> API: Check result
+
+alt High severity flag
+  API --> FE: Error - Cannot approve
+else OK
+  API -> Contract: Execute transfer
+  Contract -> Chain: Transfer funds
+  Chain --> Contract: Transaction
+  Contract --> API: Success
+  API -> DB: Update status = "paid"
+  API --> FE: Approved
+end
+
+@enduml
+

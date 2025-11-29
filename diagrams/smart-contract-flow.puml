@@ -1,0 +1,67 @@
+@startuml Smart Contract Flow
+!theme plain
+
+participant "Frontend" as FE
+participant "FastAPI" as API
+participant "Spending Service" as Service
+participant "Web3 Client" as Web3
+participant "Smart Contract" as Contract
+participant "Blockchain" as Chain
+participant "Event Listener" as Listener
+participant "PostgreSQL" as DB
+
+== Grant Creation ==
+FE -> API: POST /government/grants
+API -> Service: Create grant
+Service -> DB: Insert grant record
+Service -> Web3: Deploy contract (if needed)
+Web3 -> Contract: Deploy new contract
+Contract -> Chain: Transaction
+Chain --> Web3: Contract address
+Web3 --> Service: Contract address
+Service -> DB: Update grant with contract_address
+Service --> API: Grant created
+API --> FE: Grant response
+
+== Spending Request Approval ==
+FE -> API: POST /university/approve-top3
+API -> Service: Approve requests
+Service -> DB: Update request status
+Service -> Web3: Prepare batch transaction
+Web3 -> Contract: approveAndTransfer(requests[])
+activate Contract
+Contract -> Chain: Execute transfers
+Chain --> Contract: Transaction hash
+Contract --> Web3: Transaction receipt
+deactivate Contract
+Web3 -> DB: Store transaction hash
+Service -> DB: Update requests status = "paid"
+Service --> API: Approval complete
+API --> FE: Success response
+
+== Event Listening ==
+Listener -> Chain: Listen for events
+Chain --> Listener: Event emitted
+Listener -> DB: Store event log
+note right of Listener
+  Background process
+  Listens for:
+  - Transfer events
+  - Approval events
+  - Status changes
+end note
+
+== Transaction Status Check ==
+FE -> API: GET /grantee/spending-requests/{id}
+API -> Service: Get request
+Service -> DB: Get request data
+Service -> Web3: Check transaction status
+Web3 -> Chain: Get transaction receipt
+Chain --> Web3: Transaction status
+Web3 --> Service: Status data
+Service -> DB: Update if status changed
+Service --> API: Request with status
+API --> FE: Request data
+
+@enduml
+

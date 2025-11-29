@@ -1,0 +1,84 @@
+@startuml Backend Architecture
+!theme plain
+skinparam componentStyle rectangle
+
+package "Frontend" {
+  component [React App] as Frontend
+}
+
+package "API Layer" {
+  component [FastAPI Application] as FastAPI
+  component [Authentication Middleware] as Auth
+  component [Role-based Access Control] as RBAC
+  component [Request Validation] as Validation
+}
+
+package "Business Logic" {
+  component [Government Service] as GovService
+  component [University Service] as UniService
+  component [Grantee Service] as GranteeService
+  component [Spending Service] as SpendingService
+  component [Receipt Service] as ReceiptService
+  component [AML Service] as AmlService
+}
+
+package "Smart Contract Integration" {
+  component [Web3 Client] as Web3
+  component [Contract Interface] as Contract
+  component [Transaction Manager] as TxManager
+  component [Event Listener] as EventListener
+}
+
+package "Data Layer" {
+  database "PostgreSQL" as PG {
+    entity "users" as Users
+    entity "grants" as Grants
+    entity "spending_items" as Items
+    entity "spending_requests" as Requests
+    entity "receipts" as Receipts
+    entity "aml_flags" as AmlFlags
+    entity "contract_logs" as Logs
+  }
+}
+
+package "Storage" {
+  component [File Storage] as Storage
+  note right of Storage
+    Local storage / S3 / MinIO
+    For receipts and Excel files
+  end note
+}
+
+Frontend --> FastAPI : HTTP/REST API
+FastAPI --> Auth : JWT Validation
+Auth --> RBAC : Check Permissions
+RBAC --> Validation : Validate Request
+
+Validation --> GovService
+Validation --> UniService
+Validation --> GranteeService
+Validation --> SpendingService
+Validation --> ReceiptService
+Validation --> AmlService
+
+GovService --> PG
+UniService --> PG
+GranteeService --> PG
+SpendingService --> PG
+ReceiptService --> PG
+AmlService --> PG
+
+SpendingService --> Web3 : Create Transaction
+Web3 --> Contract : Interact with Smart Contract
+Contract --> TxManager : Execute Transaction
+TxManager --> PG : Store Transaction Hash
+EventListener --> PG : Store Contract Events
+
+ReceiptService --> Storage : Upload Files
+Storage --> PG : Store File URL
+
+PG --> FastAPI : Return Data
+FastAPI --> Frontend : JSON Response
+
+@enduml
+

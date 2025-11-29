@@ -1,0 +1,83 @@
+@startuml Full Stack Flow
+!theme plain
+
+actor User
+participant "React Frontend" as Frontend
+participant "FastAPI Backend" as Backend
+participant "PostgreSQL" as DB
+participant "Smart Contract" as Contract
+participant "Blockchain" as Chain
+participant "File Storage" as Storage
+
+== Complete Grant Lifecycle ==
+
+User -> Frontend: Login
+Frontend -> Backend: POST /auth/login
+Backend -> DB: Verify credentials
+DB --> Backend: User data
+Backend --> Frontend: JWT token + user
+
+User -> Frontend: Create Grant
+Frontend -> Backend: POST /government/grants
+Backend -> DB: Create grant record
+DB --> Backend: Grant ID
+Backend -> Contract: Deploy contract (optional)
+Contract -> Chain: Deploy transaction
+Chain --> Contract: Contract address
+Contract --> Backend: Address
+Backend -> DB: Update grant with contract address
+Backend --> Frontend: Grant created
+
+User -> Frontend: Upload Excel with Spending Items
+Frontend -> Backend: POST /government/grants/{id}/spending-items/upload
+Backend -> Backend: Parse Excel/CSV
+Backend -> DB: Create spending items
+DB --> Backend: Items created
+Backend --> Frontend: Bulk response
+
+User -> Frontend: Assign Grantee (University)
+Frontend -> Backend: PUT /university/grants/{id}/assign
+Backend -> DB: Update grant.grantee_id
+DB --> Backend: Updated grant
+Backend --> Frontend: Grant updated
+
+User -> Frontend: Create Spending Request (Grantee)
+Frontend -> Backend: POST /grantee/spending_requests
+Backend -> DB: Create request
+Backend -> Backend: Run AML checks
+Backend -> DB: Store AML flags (if any)
+DB --> Backend: Request created
+Backend --> Frontend: Request with status
+
+User -> Frontend: Upload Receipt (Grantee)
+Frontend -> Backend: POST /grantee/spending-items/{id}/receipt
+Backend -> Storage: Upload file
+Storage --> Backend: File URL
+Backend -> DB: Update spending_item.receipt_url
+DB --> Backend: Updated item
+Backend --> Frontend: Receipt uploaded
+
+User -> Frontend: Approve Top 3 (University)
+Frontend -> Backend: POST /university/approve-top3
+Backend -> DB: Get top 3 requests
+Backend -> Contract: approveAndTransfer(requests)
+Contract -> Chain: Execute batch transfer
+Chain --> Contract: Transaction hash
+Contract --> Backend: Tx hash
+Backend -> DB: Update requests (status=paid, tx_hash)
+Backend -> DB: Store transaction record
+Backend --> Frontend: Approval complete
+
+== Background Processes ==
+
+Backend -> Chain: Listen for contract events
+Chain --> Backend: Event emitted
+Backend -> DB: Store contract log
+note right of Backend
+  Background worker
+  Continuously listens
+  Stores all events
+end note
+
+@enduml
+

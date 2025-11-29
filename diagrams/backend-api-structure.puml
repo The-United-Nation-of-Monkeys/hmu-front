@@ -1,0 +1,124 @@
+@startuml Backend API Structure
+!theme plain
+
+package "FastAPI Routes" {
+  package "/auth" {
+    [POST /login] as Login
+    [POST /signup] as Signup
+    [GET /me] as Me
+  }
+  
+  package "/government" {
+    [GET /grants] as GovGrants
+    [GET /grants/{id}] as GovGrant
+    [POST /grants] as CreateGrant
+    [GET /universities] as GetUnis
+    [POST /grants/{id}/spending-items/upload] as UploadItems
+    [GET /transactions] as GetTxs
+  }
+  
+  package "/university" {
+    [GET /grants] as UniGrants
+    [GET /grants/{id}] as UniGrant
+    [GET /grantees] as GetGrantees
+    [PUT /grants/{id}/assign] as AssignGrantee
+    [GET /spending-requests] as UniRequests
+    [GET /spending-requests/{id}] as UniRequest
+    [POST /approve-top3] as ApproveTop3
+  }
+  
+  package "/grantee" {
+    [GET /grants] as GranteeGrants
+    [GET /grants/{id}] as GranteeGrant
+    [GET /grants/{id}/spending-items] as GetItems
+    [POST /spending-items] as CreateItem
+    [POST /grants/{id}/spending_items] as CreateItemsBulk
+    [POST /spending_requests] as CreateRequest
+    [GET /spending_requests] as GetRequests
+    [GET /spending_requests/{id}] as GetRequest
+    [POST /spending-items/{id}/receipt] as UploadItemReceipt
+    [POST /spending_requests/{id}/upload_receipt] as UploadRequestReceipt
+  }
+  
+  package "/contract" {
+    [GET /logs] as GetLogs
+    [GET /logs/grant/{id}] as GetGrantLogs
+  }
+  
+  package "/aml" {
+    [GET /flags/{request_id}] as GetFlags
+    [GET /flags/grant/{grant_id}] as GetGrantFlags
+  }
+}
+
+package "Services Layer" {
+  [AuthService] as Auth
+  [GovernmentService] as Gov
+  [UniversityService] as Uni
+  [GranteeService] as Grantee
+  [SpendingService] as Spending
+  [ReceiptService] as Receipt
+  [ContractService] as Contract
+  [AmlService] as Aml
+}
+
+package "Data Layer" {
+  [PostgreSQL] as DB
+  [File Storage] as Storage
+}
+
+package "External" {
+  [Smart Contract] as SC
+  [Blockchain] as BC
+}
+
+Login --> Auth
+Signup --> Auth
+Me --> Auth
+
+GovGrants --> Gov
+GovGrant --> Gov
+CreateGrant --> Gov
+GetUnis --> Gov
+UploadItems --> Gov
+GetTxs --> Gov
+
+UniGrants --> Uni
+UniGrant --> Uni
+GetGrantees --> Uni
+AssignGrantee --> Uni
+UniRequests --> Uni
+UniRequest --> Uni
+ApproveTop3 --> Uni
+
+GranteeGrants --> Grantee
+GranteeGrant --> Grantee
+GetItems --> Grantee
+CreateItem --> Grantee
+CreateItemsBulk --> Grantee
+CreateRequest --> Grantee
+GetRequests --> Grantee
+GetRequest --> Grantee
+UploadItemReceipt --> Grantee
+UploadRequestReceipt --> Grantee
+
+GetLogs --> Contract
+GetGrantLogs --> Contract
+
+GetFlags --> Aml
+GetGrantFlags --> Aml
+
+Gov --> DB
+Uni --> DB
+Grantee --> DB
+Spending --> DB
+Receipt --> Storage
+Receipt --> DB
+Contract --> SC
+Contract --> DB
+Aml --> DB
+
+SC --> BC
+
+@enduml
+

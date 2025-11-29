@@ -1,0 +1,112 @@
+@startuml Database Schema
+!theme plain
+skinparam linetype ortho
+
+entity "users" {
+  * id : INTEGER <<PK>>
+  --
+  * email : VARCHAR(255) <<UNIQUE>>
+  * password_hash : VARCHAR(255)
+  * name : VARCHAR(255)
+  * role : ENUM(government, university, grantee)
+  * created_at : TIMESTAMP
+  * updated_at : TIMESTAMP
+}
+
+entity "grants" {
+  * id : INTEGER <<PK>>
+  --
+  * title : VARCHAR(255)
+  * description : TEXT
+  * total_amount : DECIMAL(18,2)
+  * currency : VARCHAR(3)
+  * government_id : INTEGER <<FK>>
+  * university_id : INTEGER <<FK>>
+  * grantee_id : INTEGER <<FK>>
+  * contract_address : VARCHAR(255)
+  * created_at : TIMESTAMP
+  * updated_at : TIMESTAMP
+}
+
+entity "spending_items" {
+  * id : INTEGER <<PK>>
+  --
+  * grant_id : INTEGER <<FK>>
+  * title : VARCHAR(255)
+  * description : TEXT
+  * amount : DECIMAL(18,2)
+  * receipt_url : VARCHAR(500)
+  * created_at : TIMESTAMP
+}
+
+entity "spending_requests" {
+  * id : INTEGER <<PK>>
+  --
+  * grant_id : INTEGER <<FK>>
+  * spending_item_id : INTEGER <<FK>>
+  * amount : DECIMAL(18,2)
+  * status : ENUM(pending_university_approval, pending_receipt, paid, rejected, blocked)
+  * receipt_url : VARCHAR(500)
+  * transaction_hash : VARCHAR(255)
+  * created_at : TIMESTAMP
+  * updated_at : TIMESTAMP
+}
+
+entity "receipts" {
+  * id : INTEGER <<PK>>
+  --
+  * spending_item_id : INTEGER <<FK>>
+  * spending_request_id : INTEGER <<FK>>
+  * file_url : VARCHAR(500)
+  * uploaded_by : INTEGER <<FK>>
+  * uploaded_at : TIMESTAMP
+}
+
+entity "aml_flags" {
+  * id : INTEGER <<PK>>
+  --
+  * spending_request_id : INTEGER <<FK>>
+  * flag_type : VARCHAR(100)
+  * severity : ENUM(low, medium, high)
+  * description : TEXT
+  * created_at : TIMESTAMP
+}
+
+entity "contract_logs" {
+  * id : INTEGER <<PK>>
+  --
+  * grant_id : INTEGER <<FK>>
+  * transaction_hash : VARCHAR(255)
+  * event_type : VARCHAR(100)
+  * block_number : INTEGER
+  * timestamp : TIMESTAMP
+  * data : JSONB
+}
+
+entity "transactions" {
+  * id : INTEGER <<PK>>
+  --
+  * grant_id : INTEGER <<FK>>
+  * spending_request_id : INTEGER <<FK>>
+  * transaction_hash : VARCHAR(255)
+  * amount : DECIMAL(18,2)
+  * status : VARCHAR(50)
+  * block_number : INTEGER
+  * created_at : TIMESTAMP
+}
+
+users ||--o{ grants : "creates (government)"
+users ||--o{ grants : "assigned (university)"
+users ||--o{ grants : "assigned (grantee)"
+grants ||--o{ spending_items : "has"
+grants ||--o{ spending_requests : "has"
+spending_items ||--o{ spending_requests : "references"
+spending_requests ||--o{ aml_flags : "has"
+spending_items ||--o{ receipts : "has"
+spending_requests ||--o{ receipts : "has"
+grants ||--o{ contract_logs : "generates"
+spending_requests ||--o{ transactions : "creates"
+users ||--o{ receipts : "uploads"
+
+@enduml
+

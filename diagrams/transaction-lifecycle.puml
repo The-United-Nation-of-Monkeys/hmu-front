@@ -1,0 +1,58 @@
+@startuml Transaction Lifecycle
+!theme plain
+
+state "Spending Request States" as States {
+  [pending_university_approval] as Pending
+  [pending_receipt] as Receipt
+  [paid] as Paid
+  [rejected] as Rejected
+  [blocked] as Blocked
+}
+
+state "Smart Contract States" as ContractStates {
+  [Not Created] as NoContract
+  [Deployed] as Deployed
+  [Funded] as Funded
+  [Executing] as Executing
+  [Completed] as Completed
+}
+
+[*] --> Pending : Grantee creates request
+
+Pending --> Receipt : University approves
+Pending --> Rejected : University rejects
+Pending --> Blocked : AML high severity
+
+Receipt --> Paid : Grantee uploads receipt\n+ Contract executes
+Receipt --> Blocked : AML check fails
+
+Paid --> [*] : Transaction confirmed
+Rejected --> [*]
+Blocked --> [*]
+
+note right of Pending
+  Initial state
+  Waiting for university
+  approval
+end note
+
+note right of Receipt
+  Approved by university
+  Waiting for receipt upload
+  from grantee
+end note
+
+note right of Paid
+  Receipt uploaded
+  Smart contract executed
+  Funds transferred
+end note
+
+note right of Blocked
+  AML flags detected
+  Cannot proceed
+  Requires review
+end note
+
+@enduml
+

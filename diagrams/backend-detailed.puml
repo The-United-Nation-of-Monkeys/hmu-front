@@ -1,0 +1,137 @@
+@startuml Backend Detailed Architecture
+!theme plain
+skinparam componentStyle rectangle
+
+package "Client Layer" {
+  [React Frontend] as Frontend
+}
+
+package "API Gateway" {
+  [FastAPI Application] as FastAPI {
+    [CORS Middleware] as CORS
+    [JWT Middleware] as JWT
+    [Error Handler] as ErrorHandler
+    [Rate Limiter] as RateLimit
+  }
+}
+
+package "Authentication & Authorization" {
+  [JWT Service] as JWTService
+  [Password Hasher] as PasswordHash
+  [Role Validator] as RoleValidator
+}
+
+package "Business Services" {
+  package "Grant Management" {
+    [Government Service] as GovService
+    [University Service] as UniService
+    [Grantee Service] as GranteeService
+  }
+  
+  package "Spending Management" {
+    [Spending Service] as SpendingService
+    [Receipt Service] as ReceiptService
+    [File Parser] as FileParser
+  }
+  
+  package "Compliance" {
+    [AML Service] as AmlService
+    [AML Rules Engine] as AmlRules
+  }
+  
+  package "Blockchain Integration" {
+    [Web3 Service] as Web3Service
+    [Contract Manager] as ContractMgr
+    [Transaction Builder] as TxBuilder
+    [Event Monitor] as EventMonitor
+  }
+}
+
+package "Data Access Layer" {
+  [SQLAlchemy ORM] as ORM
+  [Repository Pattern] as Repo
+  [Database Migrations] as Migrations
+}
+
+package "Database" {
+  database "PostgreSQL" as PG {
+    [Users Table] as UsersTbl
+    [Grants Table] as GrantsTbl
+    [Spending Items] as ItemsTbl
+    [Spending Requests] as RequestsTbl
+    [Receipts Table] as ReceiptsTbl
+    [AML Flags] as AmlTbl
+    [Contract Logs] as LogsTbl
+    [Transactions] as TxTbl
+  }
+}
+
+package "External Services" {
+  [Blockchain Network] as Blockchain {
+    [Smart Contract] as Contract
+    [Event Logs] as Events
+  }
+  
+  [File Storage] as Storage {
+    [Local/S3/MinIO] as FileStore
+  }
+}
+
+package "Background Workers" {
+  [Event Listener] as EventWorker
+  [Transaction Monitor] as TxWorker
+  [AML Scanner] as AmlWorker
+}
+
+Frontend --> FastAPI : HTTP/REST
+FastAPI --> CORS
+FastAPI --> JWT
+FastAPI --> ErrorHandler
+FastAPI --> RateLimit
+
+JWT --> JWTService
+JWTService --> PasswordHash
+JWTService --> RoleValidator
+
+FastAPI --> GovService
+FastAPI --> UniService
+FastAPI --> GranteeService
+FastAPI --> SpendingService
+FastAPI --> ReceiptService
+FastAPI --> AmlService
+
+GovService --> ORM
+UniService --> ORM
+GranteeService --> ORM
+SpendingService --> ORM
+ReceiptService --> ORM
+AmlService --> ORM
+
+ORM --> Repo
+Repo --> PG
+
+SpendingService --> Web3Service
+Web3Service --> ContractMgr
+ContractMgr --> TxBuilder
+TxBuilder --> Blockchain
+
+ContractMgr --> Contract
+EventMonitor --> Events
+Events --> EventWorker
+EventWorker --> PG
+
+ReceiptService --> FileParser
+ReceiptService --> Storage
+Storage --> FileStore
+
+AmlService --> AmlRules
+AmlRules --> AmlWorker
+AmlWorker --> PG
+
+TxWorker --> Blockchain
+TxWorker --> PG
+
+PG --> Migrations
+
+@enduml
+

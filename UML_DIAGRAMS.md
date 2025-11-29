@@ -1,4 +1,31 @@
-# UML Диаграммы для SmartGrant Frontend
+# UML Диаграммы для SmartGrant (Frontend + Backend)
+
+## Содержание
+
+### Frontend диаграммы (1-11)
+1. Архитектура приложения
+2. Структура данных
+3. Zustand Stores
+4. API Client Structure
+5. User Flow
+6. Grant Creation Flow
+7. Spending Request Flow
+8. File Upload Flow
+9. Component Hierarchy
+10. State Management Flow
+11. Mermaid версии
+
+### Backend диаграммы (12-21)
+12. Архитектура бэкенда (FastAPI + PostgreSQL + Smart Contracts)
+13. Схема базы данных (PostgreSQL)
+14. Поток работы со смарт-контрактами
+15. Полный стек (Frontend → Backend → Blockchain)
+16. AML Check Flow
+17. Backend API Structure
+18. Transaction Lifecycle
+19. Детальная архитектура бэкенда
+20. Интеграция со смарт-контрактами
+21. Mermaid - Full Stack Architecture
 
 ## 1. Архитектура приложения (Component Diagram)
 
@@ -546,6 +573,565 @@ flowchart TD
     Gov --> GovActions[Create Grants<br/>Upload Files<br/>View All Data]
     Uni --> UniActions[Assign Grantees<br/>Approve Requests<br/>View Grants]
     Grantee --> GranteeActions[View Grants<br/>Create Requests<br/>Upload Receipts]
+```
+
+---
+
+# BACKEND ДИАГРАММЫ
+
+## 12. Архитектура бэкенда (Backend Architecture)
+
+```plantuml
+@startuml Backend Architecture
+!theme plain
+
+package "Frontend" {
+  component [React App] as Frontend
+}
+
+package "API Layer" {
+  component [FastAPI Application] as FastAPI
+  component [Authentication Middleware] as Auth
+  component [Role-based Access Control] as RBAC
+}
+
+package "Business Logic" {
+  component [Government Service] as GovService
+  component [University Service] as UniService
+  component [Grantee Service] as GranteeService
+  component [Spending Service] as SpendingService
+  component [Contract Service] as ContractService
+  component [AML Service] as AmlService
+}
+
+package "Smart Contract Integration" {
+  component [Web3 Client] as Web3
+  component [Contract Interface] as Contract
+  component [Transaction Manager] as TxManager
+  component [Event Listener] as EventListener
+}
+
+package "Data Layer" {
+  database "PostgreSQL" as PG
+}
+
+package "Storage" {
+  component [File Storage] as Storage
+}
+
+Frontend --> FastAPI
+FastAPI --> Auth
+Auth --> RBAC
+RBAC --> GovService
+RBAC --> UniService
+RBAC --> GranteeService
+
+SpendingService --> Web3
+Web3 --> Contract
+Contract --> PG
+EventListener --> PG
+
+Storage --> PG
+PG --> FastAPI
+FastAPI --> Frontend
+
+@enduml
+```
+
+## 13. Схема базы данных PostgreSQL (Database Schema)
+
+```plantuml
+@startuml Database Schema
+!theme plain
+
+entity "users" {
+  * id : INTEGER <<PK>>
+  --
+  * email : VARCHAR(255) <<UNIQUE>>
+  * password_hash : VARCHAR(255)
+  * name : VARCHAR(255)
+  * role : ENUM(government, university, grantee)
+  * created_at : TIMESTAMP
+  * updated_at : TIMESTAMP
+}
+
+entity "grants" {
+  * id : INTEGER <<PK>>
+  --
+  * title : VARCHAR(255)
+  * description : TEXT
+  * total_amount : DECIMAL(18,2)
+  * currency : VARCHAR(3)
+  * government_id : INTEGER <<FK>>
+  * university_id : INTEGER <<FK>>
+  * grantee_id : INTEGER <<FK>> <<NULLABLE>>
+  * contract_address : VARCHAR(255) <<NULLABLE>>
+  * created_at : TIMESTAMP
+  * updated_at : TIMESTAMP
+}
+
+entity "spending_items" {
+  * id : INTEGER <<PK>>
+  --
+  * grant_id : INTEGER <<FK>>
+  * title : VARCHAR(255)
+  * description : TEXT
+  * amount : DECIMAL(18,2)
+  * receipt_url : VARCHAR(500) <<NULLABLE>>
+  * created_at : TIMESTAMP
+}
+
+entity "spending_requests" {
+  * id : INTEGER <<PK>>
+  --
+  * grant_id : INTEGER <<FK>>
+  * spending_item_id : INTEGER <<FK>>
+  * amount : DECIMAL(18,2)
+  * status : ENUM(pending_university_approval, pending_receipt, paid, rejected, blocked)
+  * receipt_url : VARCHAR(500) <<NULLABLE>>
+  * transaction_hash : VARCHAR(255) <<NULLABLE>>
+  * created_at : TIMESTAMP
+  * updated_at : TIMESTAMP
+}
+
+entity "receipts" {
+  * id : INTEGER <<PK>>
+  --
+  * spending_item_id : INTEGER <<FK>> <<NULLABLE>>
+  * spending_request_id : INTEGER <<FK>> <<NULLABLE>>
+  * file_url : VARCHAR(500)
+  * uploaded_by : INTEGER <<FK>>
+  * uploaded_at : TIMESTAMP
+}
+
+entity "aml_flags" {
+  * id : INTEGER <<PK>>
+  --
+  * spending_request_id : INTEGER <<FK>>
+  * flag_type : VARCHAR(100)
+  * severity : ENUM(low, medium, high)
+  * description : TEXT
+  * created_at : TIMESTAMP
+}
+
+entity "contract_logs" {
+  * id : INTEGER <<PK>>
+  --
+  * grant_id : INTEGER <<FK>>
+  * transaction_hash : VARCHAR(255)
+  * event_type : VARCHAR(100)
+  * block_number : INTEGER
+  * timestamp : TIMESTAMP
+  * data : JSONB
+}
+
+entity "transactions" {
+  * id : INTEGER <<PK>>
+  --
+  * grant_id : INTEGER <<FK>>
+  * spending_request_id : INTEGER <<FK>>
+  * transaction_hash : VARCHAR(255) <<UNIQUE>>
+  * amount : DECIMAL(18,2)
+  * status : VARCHAR(50)
+  * block_number : INTEGER
+  * created_at : TIMESTAMP
+}
+
+users ||--o{ grants : "creates (government)"
+users ||--o{ grants : "assigned (university)"
+users ||--o{ grants : "assigned (grantee)"
+grants ||--o{ spending_items : "has"
+grants ||--o{ spending_requests : "has"
+grants ||--o{ contract_logs : "generates"
+spending_items ||--o{ spending_requests : "references"
+spending_requests ||--o{ aml_flags : "has"
+spending_items ||--o{ receipts : "has"
+spending_requests ||--o{ receipts : "has"
+spending_requests ||--o{ transactions : "creates"
+users ||--o{ receipts : "uploads"
+
+note right of grants
+  contract_address хранит адрес
+  смарт-контракта на блокчейне
+end note
+
+note right of spending_requests
+  transaction_hash связывает
+  запрос с транзакцией в блокчейне
+end note
+
+@enduml
+```
+
+## 14. Поток работы со смарт-контрактами (Smart Contract Flow)
+
+**Описание:** Показывает полный цикл взаимодействия с блокчейном - от создания гранта до выполнения транзакций.
+
+```plantuml
+@startuml Smart Contract Flow
+!theme plain
+
+participant "Frontend" as FE
+participant "FastAPI" as API
+participant "Spending Service" as Service
+participant "Web3 Client" as Web3
+participant "Smart Contract" as Contract
+participant "Blockchain" as Chain
+participant "PostgreSQL" as DB
+
+== Grant Creation ==
+FE -> API: POST /government/grants
+API -> Service: Create grant
+Service -> DB: Insert grant
+Service -> Web3: Deploy contract
+Web3 -> Contract: Deploy
+Contract -> Chain: Transaction
+Chain --> Web3: Contract address
+Web3 -> DB: Store address
+Service --> FE: Grant created
+
+== Request Approval ==
+FE -> API: POST /university/approve-top3
+API -> Service: Approve requests
+Service -> Web3: Prepare transaction
+Web3 -> Contract: approveAndTransfer(requests[])
+Contract -> Chain: Execute transfers
+Chain --> Contract: Transaction hash
+Contract --> Web3: Receipt
+Web3 -> DB: Store tx_hash
+Service --> FE: Approval complete
+
+== Event Listening ==
+Listener -> Chain: Listen for events
+Chain --> Listener: Event emitted
+Listener -> DB: Store event log
+
+@enduml
+```
+
+## 15. Полный стек (Full Stack Flow)
+
+```plantuml
+@startuml Full Stack Flow
+!theme plain
+
+actor User
+participant "React Frontend" as Frontend
+participant "FastAPI Backend" as Backend
+participant "PostgreSQL" as DB
+participant "Smart Contract" as Contract
+participant "Blockchain" as Chain
+participant "File Storage" as Storage
+
+User -> Frontend: Create Grant
+Frontend -> Backend: POST /government/grants
+Backend -> DB: Create grant
+Backend -> Contract: Deploy contract
+Contract -> Chain: Deploy
+Chain --> Contract: Address
+Contract --> Backend: Address
+Backend -> DB: Update grant
+Backend --> Frontend: Grant created
+
+User -> Frontend: Upload Excel
+Frontend -> Backend: POST /grants/{id}/spending-items/upload
+Backend -> Backend: Parse Excel
+Backend -> DB: Create items
+Backend --> Frontend: Items created
+
+User -> Frontend: Approve Requests
+Frontend -> Backend: POST /university/approve-top3
+Backend -> Contract: Execute transfer
+Contract -> Chain: Transfer funds
+Chain --> Contract: Tx hash
+Contract --> Backend: Hash
+Backend -> DB: Update requests
+Backend --> Frontend: Approved
+
+@enduml
+```
+
+## 16. AML Check Flow (AML проверка)
+
+```plantuml
+@startuml AML Check Flow
+!theme plain
+
+participant "Grantee" as User
+participant "FastAPI" as API
+participant "AML Service" as AML
+participant "PostgreSQL" as DB
+participant "Smart Contract" as Contract
+
+User -> API: Create spending request
+API -> DB: Create request
+API -> AML: check_request()
+AML -> DB: Get request history
+AML -> AML: Check patterns
+alt Flags found
+  AML -> DB: Create flags
+  AML -> DB: Update status = blocked
+else No flags
+  AML --> API: OK
+end
+API --> User: Request with flags
+
+User -> API: Approve request
+API -> AML: Final check
+alt High severity
+  API --> User: Cannot approve
+else OK
+  API -> Contract: Execute transfer
+  Contract --> API: Success
+  API -> DB: Update status = paid
+end
+
+@enduml
+```
+
+## 17. Backend API Structure (Структура API бэкенда)
+
+```plantuml
+@startuml Backend API Structure
+!theme plain
+
+package "FastAPI Routes" {
+  package "/auth" {
+    [POST /login]
+    [POST /signup]
+    [GET /me]
+  }
+  
+  package "/government" {
+    [GET /grants]
+    [POST /grants]
+    [POST /grants/{id}/spending-items/upload]
+  }
+  
+  package "/university" {
+    [GET /grants]
+    [PUT /grants/{id}/assign]
+    [POST /approve-top3]
+  }
+  
+  package "/grantee" {
+    [GET /grants]
+    [GET /grants/{id}]
+    [POST /spending_requests]
+    [POST /spending-items/{id}/receipt]
+  }
+  
+  package "/contract" {
+    [GET /logs]
+  }
+  
+  package "/aml" {
+    [GET /flags/{id}]
+  }
+}
+
+package "Services" {
+  [GovernmentService]
+  [UniversityService]
+  [GranteeService]
+  [SpendingService]
+  [ContractService]
+  [AmlService]
+}
+
+package "Data" {
+  [PostgreSQL]
+  [File Storage]
+}
+
+package "External" {
+  [Smart Contract]
+  [Blockchain]
+}
+
+@enduml
+```
+
+## 18. Transaction Lifecycle (Жизненный цикл транзакции)
+
+```plantuml
+@startuml Transaction Lifecycle
+!theme plain
+
+state "Request States" {
+  [pending_university_approval]
+  [pending_receipt]
+  [paid]
+  [rejected]
+  [blocked]
+}
+
+[*] --> pending_university_approval
+
+pending_university_approval --> pending_receipt : University approves
+pending_university_approval --> rejected : University rejects
+pending_university_approval --> blocked : AML high severity
+
+pending_receipt --> paid : Receipt uploaded\n+ Contract executes
+pending_receipt --> blocked : AML check fails
+
+paid --> [*]
+rejected --> [*]
+blocked --> [*]
+
+@enduml
+```
+
+## 19. Детальная архитектура бэкенда (Detailed Backend Architecture)
+
+```plantuml
+@startuml Backend Detailed Architecture
+!theme plain
+
+package "FastAPI Application" {
+  [FastAPI App] as FastAPI {
+    [CORS Middleware]
+    [JWT Middleware]
+    [Error Handler]
+    [Rate Limiter]
+  }
+}
+
+package "Services" {
+  [Government Service]
+  [University Service]
+  [Grantee Service]
+  [Spending Service]
+  [Contract Service]
+  [AML Service]
+  [Receipt Service]
+}
+
+package "Data Access" {
+  [SQLAlchemy ORM]
+  [Repository Pattern]
+}
+
+package "Database" {
+  database "PostgreSQL" {
+    [Users]
+    [Grants]
+    [Spending Items]
+    [Spending Requests]
+    [Receipts]
+    [AML Flags]
+    [Contract Logs]
+  }
+}
+
+package "Blockchain" {
+  [Web3 Client]
+  [Contract Manager]
+  [Transaction Builder]
+  [Event Monitor]
+  [Smart Contract]
+}
+
+package "Storage" {
+  [File Storage\nS3/MinIO/Local]
+}
+
+FastAPI --> Services
+Services --> ORM
+ORM --> PostgreSQL
+Spending Service --> Web3 Client
+Web3 Client --> Smart Contract
+Receipt Service --> File Storage
+
+@enduml
+```
+
+## 20. Интеграция со смарт-контрактами (Smart Contract Integration)
+
+```plantuml
+@startuml Smart Contract Integration
+!theme plain
+
+package "FastAPI Backend" {
+  [Contract Service]
+  [Web3 Client]
+  [Transaction Queue]
+}
+
+interface "IGrantContract" {
+  +approveAndTransfer(requests: Request[]): TransactionHash
+  +getBalance(grantId: uint): uint256
+  +getRequestStatus(requestId: uint): Status
+}
+
+class "GrantContract.sol" {
+  -grants: mapping(uint => Grant)
+  -requests: mapping(uint => Request)
+  -balances: mapping(uint => uint256)
+  +approveAndTransfer()
+  +getBalance()
+  +onTransfer()
+  +onApproval()
+}
+
+package "Blockchain" {
+  [Ethereum/Polygon Network]
+  [Transaction Pool]
+  [Blockchain State]
+}
+
+package "Event System" {
+  [Event Listener]
+  [Event Parser]
+  [Event Storage]
+}
+
+Contract Service --> Web3 Client
+Web3 Client --> Network
+Network --> Event Listener
+Event Listener --> Event Storage
+
+note right of GrantContract.sol
+  Solidity Smart Contract
+  Manages grant funds
+  Executes transfers
+  Tracks request status
+end note
+
+@enduml
+```
+
+## 21. Mermaid - Full Stack Architecture
+
+```mermaid
+graph TB
+    subgraph Frontend
+        A[React App] --> B[React Router]
+        A --> C[React Query]
+        A --> D[Zustand]
+        A --> E[Axios Client]
+    end
+    
+    subgraph Backend
+        F[FastAPI] --> G[JWT Auth]
+        F --> H[RBAC]
+        F --> I[Services]
+        I --> J[SQLAlchemy]
+        J --> K[PostgreSQL]
+        I --> L[Web3 Client]
+        L --> M[Smart Contract]
+        I --> N[File Storage]
+    end
+    
+    subgraph Blockchain
+        M --> O[Ethereum/Polygon]
+        O --> P[Event Logs]
+        P --> Q[Event Listener]
+        Q --> K
+    end
+    
+    E --> F
+    M --> O
 ```
 
 ## Использование

@@ -1,0 +1,151 @@
+@startuml Backend Services
+!theme plain
+
+package "FastAPI Application" {
+  class FastAPIApp {
+    +app: FastAPI
+    +middleware: list
+    +routers: list
+    +startup()
+    +shutdown()
+  }
+}
+
+package "Authentication" {
+  class AuthService {
+    +verify_token(token: str): User
+    +create_token(user: User): str
+    +hash_password(password: str): str
+    +verify_password(password: str, hash: str): bool
+  }
+  
+  class JWTMiddleware {
+    +verify_jwt(token: str): dict
+    +get_current_user(): User
+  }
+}
+
+package "Services" {
+  class GovernmentService {
+    +create_grant(data: dict): Grant
+    +get_grants(): List[Grant]
+    +get_grant(id: int): Grant
+    +upload_spending_items(grant_id: int, file: File): BulkResponse
+    +get_transactions(): List[Transaction]
+  }
+  
+  class UniversityService {
+    +get_grants(): List[Grant]
+    +get_grant(id: int): Grant
+    +get_grantees(): List[Grantee]
+    +assign_grantee(grant_id: int, grantee_id: int): Grant
+    +get_spending_requests(): List[SpendingRequest]
+    +approve_top3(request_ids: List[int]): void
+  }
+  
+  class GranteeService {
+    +get_grants(): List[Grant]
+    +get_grant(id: int): Grant
+    +get_spending_items(grant_id: int): List[SpendingItem]
+    +create_spending_request(data: dict): SpendingRequest
+    +upload_receipt(request_id: int, file: File): Receipt
+  }
+  
+  class SpendingService {
+    +create_spending_item(data: dict): SpendingItem
+    +create_spending_items_bulk(grant_id: int, items: List[dict]): List[SpendingItem]
+    +get_spending_items(grant_id: int): List[SpendingItem]
+    +create_spending_request(data: dict): SpendingRequest
+    +approve_requests(request_ids: List[int]): void
+  }
+  
+  class ReceiptService {
+    +upload_receipt(file: File, item_id: int = None, request_id: int = None): Receipt
+    +get_receipt_url(receipt_id: int): str
+    +delete_receipt(receipt_id: int): void
+  }
+  
+  class AmlService {
+    +check_request(request_id: int): List[AmlFlag]
+    +get_flags(request_id: int): List[AmlFlag]
+    +get_flags_by_grant(grant_id: int): List[AmlFlag]
+  }
+  
+  class ContractService {
+    +deploy_contract(grant_id: int): str
+    +approve_and_transfer(request_ids: List[int]): str
+    +get_transaction_status(tx_hash: str): dict
+    +get_contract_logs(grant_id: int): List[ContractLog]
+  }
+}
+
+package "Database" {
+  class Database {
+    +session: Session
+    +get_user(id: int): User
+    +create_grant(data: dict): Grant
+    +get_grants(filters: dict): List[Grant]
+    +create_spending_item(data: dict): SpendingItem
+    +create_spending_request(data: dict): SpendingRequest
+    +update_request_status(id: int, status: str): void
+    +store_contract_log(log: dict): void
+  }
+  
+  class Models {
+    +User
+    +Grant
+    +SpendingItem
+    +SpendingRequest
+    +Receipt
+    +AmlFlag
+    +ContractLog
+    +Transaction
+  }
+}
+
+package "Smart Contract" {
+  class Web3Client {
+    +provider: Web3Provider
+    +contract: Contract
+    +send_transaction(tx: dict): str
+    +get_transaction_receipt(tx_hash: str): dict
+    +listen_events(event_name: str): Event
+  }
+  
+  class ContractInterface {
+    +approveAndTransfer(requests: List[dict]): str
+    +getBalance(grant_id: int): int
+    +getRequestStatus(request_id: int): str
+  }
+}
+
+package "File Storage" {
+  class StorageService {
+    +upload_file(file: File, path: str): str
+    +get_file_url(file_path: str): str
+    +delete_file(file_path: str): void
+  }
+}
+
+FastAPIApp --> AuthService
+FastAPIApp --> GovernmentService
+FastAPIApp --> UniversityService
+FastAPIApp --> GranteeService
+
+GovernmentService --> Database
+UniversityService --> Database
+GranteeService --> Database
+SpendingService --> Database
+ReceiptService --> Database
+AmlService --> Database
+
+SpendingService --> ContractService
+ContractService --> Web3Client
+Web3Client --> ContractInterface
+
+ReceiptService --> StorageService
+
+Database --> Models
+
+@enduml
+

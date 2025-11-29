@@ -1,0 +1,80 @@
+@startuml Smart Contract Integration
+!theme plain
+
+package "FastAPI Backend" {
+  [Contract Service] as Service
+  [Web3 Client] as Web3
+  [Transaction Queue] as Queue
+}
+
+package "Smart Contract" {
+  interface "IGrantContract" {
+    +approveAndTransfer(requests: Request[]): TransactionHash
+    +getBalance(grantId: uint): uint256
+    +getRequestStatus(requestId: uint): Status
+    +withdraw(amount: uint256): TransactionHash
+  }
+  
+  class "GrantContract.sol" {
+    -grants: mapping(uint => Grant)
+    -requests: mapping(uint => Request)
+    -balances: mapping(uint => uint256)
+    +approveAndTransfer()
+    +getBalance()
+    +onTransfer()
+    +onApproval()
+  }
+}
+
+package "Blockchain" {
+  [Ethereum/Polygon Network] as Network
+  [Transaction Pool] as TxPool
+  [Blockchain State] as State
+}
+
+package "Event System" {
+  [Event Listener] as Listener
+  [Event Parser] as Parser
+  [Event Storage] as EventStore
+}
+
+Service --> Web3 : Initialize connection
+Web3 --> Network : Connect to RPC
+
+Service -> Web3 : Deploy contract
+Web3 -> Network : Deploy transaction
+Network --> Web3 : Contract address
+Web3 --> Service : Address stored
+
+Service -> Web3 : Prepare batch transfer
+Web3 -> Queue : Add transaction
+Queue -> Web3 : Execute transaction
+Web3 -> Network : Send transaction
+Network -> TxPool : Add to pool
+TxPool -> State : Include in block
+State --> Network : Block confirmed
+Network --> Web3 : Transaction receipt
+Web3 --> Service : Receipt data
+Service --> Service : Update database
+
+Network --> Listener : Emit events
+Listener -> Parser : Parse event
+Parser -> EventStore : Store event
+EventStore --> Service : Notify backend
+
+note right of GrantContract.sol
+  Solidity Smart Contract
+  Manages grant funds
+  Executes transfers
+  Tracks request status
+end note
+
+note right of Network
+  Blockchain Network
+  - Ethereum
+  - Polygon
+  - Other EVM-compatible
+end note
+
+@enduml
+
