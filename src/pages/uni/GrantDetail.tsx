@@ -81,13 +81,13 @@ export function UniGrantDetail() {
     {
       key: 'created_at',
       header: t('createdAt'),
-      render: (item: any) => (
+      render: (item: any) => (item.created_at ?
         <div className="text-sm">
           <div>{formatDate(item.created_at)}</div>
           <div className="text-muted-foreground text-xs">
             {new Date(item.created_at).toLocaleTimeString()}
           </div>
-        </div>
+        </div> : <></>
       ),
     },
   ]
@@ -112,7 +112,7 @@ export function UniGrantDetail() {
     {
       key: 'created_at',
       header: t('createdAt'),
-      render: (request: any) => formatDate(request.created_at),
+      render: (request: any) => request.created_at ? formatDate(request.created_at) : null,
     },
   ]
 
@@ -160,7 +160,7 @@ export function UniGrantDetail() {
                   Total: {grant.spending_items?.length || 0} items •{' '}
                   Total Amount:{' '}
                   {grant.spending_items
-                    ?.reduce((sum, item) => sum + item.amount, 0)
+                    ?.reduce((sum, item) => Number(sum) + Number(item.amount), 0)
                     .toLocaleString('ru-RU') || 0}{' '}
                   {grant.currency}
                 </p>

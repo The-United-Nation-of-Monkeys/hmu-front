@@ -30,7 +30,7 @@ export const spendingApi = {
   // Создание множественных статей расходов для гранта
   createSpendingItems: async (data: CreateSpendingItemsRequest): Promise<SpendingItem[]> => {
     const response = await api.post<SpendingItem[]>(
-      `/grantee/grants/${data.grant_id}/spending_items`,
+      `/grantee/grants/${data.grant_id}/spending-items`,
       { items: data.items }
     )
     return response.data
@@ -42,17 +42,17 @@ export const spendingApi = {
   },
 
   createSpendingRequest: async (data: CreateSpendingRequestRequest): Promise<SpendingRequest> => {
-    const response = await api.post<SpendingRequest>('/grantee/spending_requests', data)
+    const response = await api.post<SpendingRequest>('/grantee/spending-requests', data)
     return response.data
   },
 
   getSpendingRequest: async (id: number): Promise<SpendingRequest> => {
-    const response = await api.get<SpendingRequest>(`/grantee/spending_requests/${id}`)
+    const response = await api.get<SpendingRequest>(`/grantee/spending-requests/${id}`)
     return response.data
   },
 
   getSpendingRequests: async (): Promise<SpendingRequest[]> => {
-    const response = await api.get<SpendingRequest[]>('/grantee/spending_requests')
+    const response = await api.get<SpendingRequest[]>('/grantee/spending-requests')
     return response.data
   },
 

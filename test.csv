@@ -1,11 +1,9 @@
 Title,Description,Amount
-"Микроскоп","Микроскоп для клеточного анализа",250000
-"Генетический анализатор","Устройство для анализа ДНК вируса",500000
-"Системы ПЦР","Кит для проведения ПЦР-тестов",300000
-"Персональные защитные средства","Маски,перчатки,защитные костюмы",100000
-"Химикаты для анализа","Реагенты для исследования образцов",150000
-"Биологические образцы","Собранные образцы для исследования",200000
-"Оборудование для хранения","Холодильники для хранения биоматериалов",120000
-"Компьютерное оборудование","Ноутбуки для обработки данных",80000
-"Оплата труда исследователей","Финансирование зарплат исследователей",600000
-"Обучающие курсы","Курсы по работе с новым оборудованием",50000
+"Personnel Costs","Salaries for research staff including scientists and technicians",250000
+"Laboratory Equipment","Purchase of specialized equipment for viral analysis",150000
+"Supplies","Consumables such as reagents, swabs, and PPE",50000
+"Data Analysis Software","Licensing costs for data analysis tools",20000
+"Collaborative Research","Funding for collaborative studies with partner institutions",75000
+"Publication Fees","Costs associated with publishing research findings",30000
+"Travel Expenses","Travel costs for conference attendance and fieldwork",40000
+"Indirect Costs","Overhead costs associated with the research facilities",50000
