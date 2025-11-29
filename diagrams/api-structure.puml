@@ -1,0 +1,57 @@
+@startuml API Structure
+!theme plain
+
+package "API Clients" {
+  class ApiClient {
+    -baseURL: string
+    -headers: object
+    +get<T>(url: string): Promise<T>
+    +post<T>(url: string, data: any): Promise<T>
+    +put<T>(url: string, data: any): Promise<T>
+    +delete<T>(url: string): Promise<T>
+  }
+
+  class GrantsAPI {
+    +getGrants(): Promise<Grant[]>
+    +getGrant(id: number): Promise<Grant>
+    +createGrant(data: CreateGrantRequest): Promise<Grant>
+    +uploadSpendingItemsFile(grantId: number, file: File): Promise<BulkSpendingItemsResponse>
+    +getUniversities(): Promise<University[]>
+    +getGrantees(): Promise<Grantee[]>
+    +assignGrantee(grantId: number, granteeId: number): Promise<Grant>
+  }
+
+  class SpendingAPI {
+    +createSpendingItem(data: CreateSpendingItemRequest): Promise<SpendingItem>
+    +createSpendingItems(data: CreateSpendingItemsRequest): Promise<SpendingItem[]>
+    +getSpendingItems(grantId: number): Promise<SpendingItem[]>
+    +createSpendingRequest(data: CreateSpendingRequestRequest): Promise<SpendingRequest>
+    +getSpendingRequest(id: number): Promise<SpendingRequest>
+    +getSpendingRequests(): Promise<SpendingRequest[]>
+    +approveTop3(requestIds: number[]): Promise<void>
+  }
+
+  class ReceiptsAPI {
+    +uploadReceipt(data: UploadReceiptRequest): Promise<ReceiptResponse>
+    +uploadSpendingItemReceipt(data: UploadSpendingItemReceiptRequest): Promise<ReceiptResponse>
+  }
+
+  class ContractAPI {
+    +getLogs(): Promise<ContractLog[]>
+    +getLogsByGrant(grantId: number): Promise<ContractLog[]>
+  }
+
+  class AmlAPI {
+    +getFlags(spendingRequestId: number): Promise<AmlFlag[]>
+    +getFlagsByGrant(grantId: number): Promise<AmlFlag[]>
+  }
+}
+
+ApiClient <|-- GrantsAPI
+ApiClient <|-- SpendingAPI
+ApiClient <|-- ReceiptsAPI
+ApiClient <|-- ContractAPI
+ApiClient <|-- AmlAPI
+
+@enduml
+

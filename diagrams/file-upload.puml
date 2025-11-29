@@ -1,0 +1,41 @@
+@startuml File Upload Sequence
+!theme plain
+
+actor Government
+participant "UploadDialog" as Dialog
+participant "grantsApi" as API
+participant "Backend" as BE
+participant "React Query" as Query
+
+Government -> Dialog: Select Excel/CSV file
+activate Dialog
+
+Dialog -> Dialog: Validate file format\n(.xlsx, .xls, .csv)
+
+Government -> Dialog: Click Upload
+
+Dialog -> API: uploadSpendingItemsFile(grantId, file)
+activate API
+
+API -> BE: POST /government/grants/{id}/spending-items/upload\nmultipart/form-data
+activate BE
+
+BE -> BE: Parse Excel/CSV file
+BE -> BE: Validate data\n(Title, Description, Amount)
+BE -> BE: Create SpendingItems in database
+BE --> API: BulkSpendingItemsResponse\n{created: number, items: SpendingItem[]}
+deactivate BE
+
+API --> Dialog: Response with created items
+deactivate API
+
+Dialog -> Query: Invalidate grant queries
+activate Query
+Query -> API: Refetch grant with new items
+deactivate Query
+
+Dialog --> Government: Show success toast\n"X items created"
+deactivate Dialog
+
+@enduml
+

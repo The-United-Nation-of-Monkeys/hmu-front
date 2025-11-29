@@ -1,0 +1,44 @@
+@startuml Grant Creation Sequence
+!theme plain
+
+actor Government
+participant "CreateGrantDialog" as Dialog
+participant "grantsApi" as API
+participant "Backend" as BE
+participant "authStore" as Store
+participant "React Query" as Query
+
+Government -> Dialog: Open dialog
+activate Dialog
+
+Dialog -> API: getUniversities()
+activate API
+API -> BE: GET /government/universities
+activate BE
+BE --> API: List of universities
+deactivate BE
+API --> Dialog: Universities list
+deactivate API
+
+Government -> Dialog: Fill form\n(title, amount, university)
+Government -> Dialog: Submit form
+
+Dialog -> API: createGrant(data)
+activate API
+API -> BE: POST /government/grants\n{title, total_amount, university_id}
+activate BE
+BE --> API: Created Grant
+deactivate BE
+API --> Dialog: Grant object
+deactivate API
+
+Dialog -> Query: Invalidate queries
+activate Query
+Query -> API: Refetch grants list
+deactivate Query
+
+Dialog --> Government: Show success toast
+deactivate Dialog
+
+@enduml
+

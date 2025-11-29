@@ -1,0 +1,78 @@
+@startuml Data Model
+!theme plain
+
+class Grant {
+  +id: number
+  +title: string
+  +description: string
+  +total_amount: number
+  +currency: string
+  +government_id: number
+  +university_id?: number
+  +grantee_id?: number
+  +created_at: string
+  +updated_at: string
+}
+
+class SpendingItem {
+  +id: number
+  +grant_id: number
+  +title: string
+  +description: string
+  +amount: number
+  +receipt_url?: string
+  +created_at: string
+}
+
+class SpendingRequest {
+  +id: number
+  +grant_id: number
+  +spending_item_id: number
+  +amount: number
+  +status: string
+  +created_at: string
+  +updated_at: string
+  +receipt_url?: string
+}
+
+class User {
+  +id: number
+  +email: string
+  +name: string
+  +role: UserRole
+}
+
+enum UserRole {
+  government
+  university
+  grantee
+}
+
+class AmlFlag {
+  +id: number
+  +spending_request_id: number
+  +flag_type: string
+  +severity: string
+  +description: string
+  +created_at: string
+}
+
+class ContractLog {
+  +id: number
+  +transaction_hash: string
+  +event_type: string
+  +block_number: number
+  +timestamp: string
+  +data: object
+}
+
+Grant "1" *-- "many" SpendingItem : contains
+Grant "1" *-- "many" SpendingRequest : contains
+SpendingRequest "1" *-- "many" AmlFlag : has
+SpendingItem "1" --> "1" Grant : belongs to
+SpendingRequest "1" --> "1" Grant : belongs to
+SpendingRequest "1" --> "1" SpendingItem : references
+User --> UserRole
+
+@enduml
+

@@ -1,0 +1,51 @@
+@startuml SmartGrant Architecture
+!theme plain
+skinparam componentStyle rectangle
+
+package "Frontend Application" {
+  component [React App] as App
+  component [React Router] as Router
+  component [React Query] as Query
+  component [Zustand Stores] as Stores
+  component [API Client] as API
+}
+
+package "UI Layer" {
+  component [shadcn/ui] as UI
+  component [Custom Components] as Custom
+  component [Layouts] as Layouts
+}
+
+package "Pages" {
+  component [Public Pages] as Public
+  component [Government Pages] as Gov
+  component [University Pages] as Uni
+  component [Grantee Pages] as Grantee
+}
+
+package "Backend API" {
+  component [FastAPI Server] as Backend
+}
+
+App --> Router
+App --> Query
+App --> Stores
+App --> API
+
+Router --> Public
+Router --> Gov
+Router --> Uni
+Router --> Grantee
+
+Gov --> Custom
+Uni --> Custom
+Grantee --> Custom
+
+Custom --> UI
+Layouts --> UI
+
+API --> Backend
+Query --> API
+
+@enduml
+

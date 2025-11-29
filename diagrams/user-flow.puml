@@ -1,0 +1,47 @@
+@startuml User Flow
+!theme plain
+
+start
+:User visits application;
+if (Authenticated?) then (no)
+  :Show Login/Signup page;
+  :User enters credentials;
+  :Validate credentials;
+  if (Valid?) then (no)
+    :Show error;
+    stop
+  else (yes)
+    :Store token and user;
+  endif
+else (yes)
+endif
+
+:Determine user role;
+
+if (Role?) then (Government)
+  :Show Government Dashboard;
+  :Can create grants;
+  :Can upload spending items (Excel/CSV);
+  :Can view all grants and transactions;
+  :Can view smart contract logs;
+elseif (University) then
+  :Show University Dashboard;
+  :Can view grants;
+  :Can assign grantees to grants;
+  :Can approve top-3 requests;
+  :Can view AML flags;
+  :Can view smart contract logs;
+else (Grantee)
+  :Show Grantee Dashboard;
+  :Can view assigned grants;
+  :Can view spending items;
+  :Can create spending requests;
+  :Can upload receipts for items;
+  :Can upload receipts for requests;
+  :Can view smart contract logs;
+endif
+
+stop
+
+@enduml
+

@@ -1,0 +1,54 @@
+@startuml Spending Request Sequence
+!theme plain
+
+actor Grantee
+participant "GrantDetail" as Page
+participant "CreateSpendingRequestDialog" as Dialog
+participant "spendingApi" as API
+participant "Backend" as BE
+participant "React Query" as Query
+
+Grantee -> Page: View grant details
+activate Page
+
+Page -> Query: Fetch grant with spending items
+activate Query
+Query -> API: getGranteeGrant(id)
+activate API
+API -> BE: GET /grantee/grants/{id}
+activate BE
+BE --> API: Grant with spending items
+deactivate BE
+API --> Query: Grant data
+deactivate API
+Query --> Page: Display grant and items
+deactivate Query
+
+Grantee -> Dialog: Click "Create Request"
+activate Dialog
+
+Dialog -> Dialog: Show spending items list\n(from grant data)
+
+Grantee -> Dialog: Select item and amount
+Grantee -> Dialog: Submit
+
+Dialog -> API: createSpendingRequest(data)
+activate API
+API -> BE: POST /grantee/spending_requests\n{grant_id, spending_item_id, amount}
+activate BE
+BE --> API: Created request
+deactivate BE
+API --> Dialog: Request object
+deactivate API
+
+Dialog -> Query: Invalidate queries
+activate Query
+Query -> API: Refetch grant data
+deactivate Query
+
+Dialog --> Grantee: Show success toast
+deactivate Dialog
+deactivate Page
+
+@enduml
+

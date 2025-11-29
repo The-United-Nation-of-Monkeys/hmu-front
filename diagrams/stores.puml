@@ -1,0 +1,59 @@
+@startuml Zustand Stores
+!theme plain
+
+class AuthStore {
+  -token: string | null
+  -user: User | null
+  -isAuthenticated: boolean
+  +login(token: string, user: User): void
+  +logout(): void
+  +setUser(user: User): void
+}
+
+class UIStore {
+  -sidebarOpen: boolean
+  +setSidebarOpen(open: boolean): void
+  +toggleSidebar(): void
+}
+
+class GrantStore {
+  -currentGrant: Grant | null
+  -grants: Grant[]
+  +setCurrentGrant(grant: Grant | null): void
+  +setGrants(grants: Grant[]): void
+  +fetchGrants(): Promise<void>
+}
+
+class User {
+  +id: number
+  +email: string
+  +name: string
+  +role: UserRole
+}
+
+class Grant {
+  +id: number
+  +title: string
+  +total_amount: number
+}
+
+AuthStore --> User : stores
+GrantStore --> Grant : stores
+
+note right of AuthStore
+  Persisted to localStorage
+  Handles authentication state
+end note
+
+note right of UIStore
+  Manages UI state
+  Sidebar visibility
+end note
+
+note right of GrantStore
+  Caches grant data
+  Current selection
+end note
+
+@enduml
+

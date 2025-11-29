@@ -1,0 +1,77 @@
+@startuml Component Hierarchy
+!theme plain
+
+package "Pages" {
+  component [Login] as LoginPage
+  component [Signup] as SignupPage
+  component [GovDashboard] as GovDash
+  component [UniDashboard] as UniDash
+  component [GranteeDashboard] as GranteeDash
+  component [GrantDetail] as GrantDetail
+}
+
+package "Components" {
+  component [NavBar] as Nav
+  component [Sidebar] as Sidebar
+  component [DataTable] as Table
+  component [FileUpload] as FileUp
+  component [StatusBadge] as Badge
+  component [AmountBadge] as Amount
+  component [CreateGrantDialog] as CreateGrant
+  component [UploadSpendingItemsDialog] as UploadItems
+  component [AssignGranteeDialog] as Assign
+  component [CreateSpendingRequestDialog] as CreateReq
+  component [UploadReceiptDialog] as UploadReceipt
+  component [AmlFlagList] as AmlList
+  component [ContractLogList] as LogList
+}
+
+package "Layouts" {
+  component [DashboardLayout] as Layout
+}
+
+package "UI Components (shadcn)" {
+  component [Button] as Btn
+  component [Card] as Card
+  component [Dialog] as Dialog
+  component [Input] as Input
+  component [Select] as Select
+  component [Table] as UITable
+  component [Tabs] as Tabs
+  component [Badge] as UIBadge
+}
+
+Layout --> Nav
+Layout --> Sidebar
+Layout --> GovDash
+Layout --> UniDash
+Layout --> GranteeDash
+
+GovDash --> GrantDetail
+UniDash --> GrantDetail
+GranteeDash --> GrantDetail
+
+GrantDetail --> Table
+GrantDetail --> CreateGrant
+GrantDetail --> UploadItems
+GrantDetail --> Assign
+GrantDetail --> CreateReq
+GrantDetail --> UploadReceipt
+GrantDetail --> AmlList
+GrantDetail --> LogList
+
+Table --> UITable
+CreateGrant --> Dialog
+CreateGrant --> Input
+CreateGrant --> Select
+UploadItems --> FileUp
+UploadReceipt --> FileUp
+
+Dialog --> Btn
+FileUp --> Card
+Badge --> UIBadge
+Amount --> UIBadge
+Tabs --> GrantDetail
+
+@enduml
+
