@@ -606,6 +606,7 @@ package "Business Logic" {
 
 package "Smart Contract Integration" {
   component [Web3 Client] as Web3
+  component [Mir Pay API Client] as MirPay
   component [Contract Interface] as Contract
   component [Transaction Manager] as TxManager
   component [Event Listener] as EventListener
@@ -627,9 +628,13 @@ RBAC --> UniService
 RBAC --> GranteeService
 
 SpendingService --> Web3
+SpendingService --> MirPay
 Web3 --> Contract
+Web3 --> MirPay
+MirPay --> Contract
 Contract --> PG
 EventListener --> PG
+EventListener --> MirPay
 
 Storage --> PG
 PG --> FastAPI
@@ -775,6 +780,7 @@ participant "Frontend" as FE
 participant "FastAPI" as API
 participant "Spending Service" as Service
 participant "Web3 Client" as Web3
+participant "Mir Pay API" as MirPay
 participant "Smart Contract" as Contract
 participant "Blockchain" as Chain
 participant "PostgreSQL" as DB
@@ -787,6 +793,8 @@ Service -> Web3: Deploy contract
 Web3 -> Contract: Deploy
 Contract -> Chain: Transaction
 Chain --> Web3: Contract address
+Web3 -> MirPay: Register contract
+MirPay --> Web3: Confirmation
 Web3 -> DB: Store address
 Service --> FE: Grant created
 
@@ -794,9 +802,13 @@ Service --> FE: Grant created
 FE -> API: POST /university/approve-top3
 API -> Service: Approve requests
 Service -> Web3: Prepare transaction
+Service -> MirPay: Check transaction status
+MirPay --> Service: Status OK
 Web3 -> Contract: approveAndTransfer(requests[])
 Contract -> Chain: Execute transfers
-Chain --> Contract: Transaction hash
+Chain --> Web3: Transaction hash
+Web3 -> MirPay: Register transaction
+MirPay --> Web3: Transaction receipt
 Contract --> Web3: Receipt
 Web3 -> DB: Store tx_hash
 Service --> FE: Approval complete
@@ -804,6 +816,8 @@ Service --> FE: Approval complete
 == Event Listening ==
 Listener -> Chain: Listen for events
 Chain --> Listener: Event emitted
+Listener -> MirPay: Sync event
+MirPay --> Listener: Event data
 Listener -> DB: Store event log
 
 @enduml
@@ -819,6 +833,7 @@ actor User
 participant "React Frontend" as Frontend
 participant "FastAPI Backend" as Backend
 participant "PostgreSQL" as DB
+participant "Mir Pay API" as MirPay
 participant "Smart Contract" as Contract
 participant "Blockchain" as Chain
 participant "File Storage" as Storage
@@ -830,6 +845,8 @@ Backend -> Contract: Deploy contract
 Contract -> Chain: Deploy
 Chain --> Contract: Address
 Contract --> Backend: Address
+Backend -> MirPay: Register contract
+MirPay --> Backend: Confirmation
 Backend -> DB: Update grant
 Backend --> Frontend: Grant created
 
@@ -841,10 +858,14 @@ Backend --> Frontend: Items created
 
 User -> Frontend: Approve Requests
 Frontend -> Backend: POST /university/approve-top3
+Backend -> MirPay: Check transaction status
+MirPay --> Backend: Status OK
 Backend -> Contract: Execute transfer
 Contract -> Chain: Transfer funds
 Chain --> Contract: Tx hash
 Contract --> Backend: Hash
+Backend -> MirPay: Register transaction
+MirPay --> Backend: Transaction receipt
 Backend -> DB: Update requests
 Backend --> Frontend: Approved
 
@@ -1026,6 +1047,7 @@ package "Database" {
 
 package "Blockchain" {
   [Web3 Client]
+  [Mir Pay API Client]
   [Contract Manager]
   [Transaction Builder]
   [Event Monitor]
@@ -1040,7 +1062,9 @@ FastAPI --> Services
 Services --> ORM
 ORM --> PostgreSQL
 Spending Service --> Web3 Client
+Spending Service --> Mir Pay API Client
 Web3 Client --> Smart Contract
+Mir Pay API Client --> Smart Contract
 Receipt Service --> File Storage
 
 @enduml
@@ -1056,6 +1080,7 @@ package "FastAPI Backend" {
   [Contract Service]
   [Web3 Client]
   [Transaction Queue]
+  [Mir Pay API Client]
 }
 
 interface "IGrantContract" {
@@ -1080,6 +1105,15 @@ package "Blockchain" {
   [Blockchain State]
 }
 
+package "Mir Pay API" {
+  [Transaction Status API]
+  [Block Explorer API]
+  [Account Balance API]
+  [Event History API]
+  [Gas Price API]
+  [Payment Processing API]
+}
+
 package "Event System" {
   [Event Listener]
   [Event Parser]
@@ -1087,7 +1121,15 @@ package "Event System" {
 }
 
 Contract Service --> Web3 Client
+Contract Service --> Mir Pay API Client
 Web3 Client --> Network
+Mir Pay API Client --> Transaction Status API
+Mir Pay API Client --> Block Explorer API
+Mir Pay API Client --> Account Balance API
+Mir Pay API Client --> Event History API
+Mir Pay API Client --> Gas Price API
+Mir Pay API Client --> Payment Processing API
+
 Network --> Event Listener
 Event Listener --> Event Storage
 
@@ -1096,6 +1138,16 @@ note right of GrantContract.sol
   Manages grant funds
   Executes transfers
   Tracks request status
+end note
+
+note right of Mir Pay API Client
+  Mir Pay API используется для:
+  - Проверки статуса транзакций
+  - Получения истории событий
+  - Мониторинга балансов
+  - Получения данных о блоках
+  - Оптимизации gas price
+  - Обработки платежей
 end note
 
 @enduml
